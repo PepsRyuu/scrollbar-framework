@@ -16,4 +16,4 @@ npm install scrollbar-framework
 
 ## Examples
 
-[Preact Demo](https://pepsryuu.github.io/demo/scrollbar-framework/)
+[Preact Demo](https://pepsryuu.github.io/demo/scrollbar-framework/index.html)
