@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>Scrollbar Framework Demo</title>
+        <style>
+            .list {
+                position: absolute;
+                top: 20%;
+                left: 20%;
+                height: 60%;
+                width: 60%;
+                border: 1px solid #CCC;
+                background: #FFF;
+                overflow: auto;
+                font-family: Arial, sans-serif;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .row {
+                position: relative;
+                display: block;
+                height: 30px;
+                line-height: 30px;
+                padding: 0 20px;
+                box-shadow: inset 0 -1px 0 #DDD;
+                overflow: hidden;
+            }
+        </style>
+        <style>
+            .Scrollable {
+                position: relative;
+                height: 100%;
+            }
+
+            .Scrollable-content {
+                position: absolute;
+                overflow: hidden;
+                width: calc(100% - 17px);
+                height: 100%;
+            }
+
+            .Scrollable-scrollbar {
+                position: absolute;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                width: 17px;
+                background-color: rgb(241, 241, 241);
+            }
+
+            .Scrollable-arrow {
+                position: relative;
+                width: 100%;
+                height: 17px;
+                opacity: 0.5;
+            }
+
+            .Scrollable-arrow.active {
+                opacity: 1;
+            }
+
+            .Scrollable-arrow.active:hover {
+                background-color: rgb(210, 210, 210);
+            }
+
+            .Scrollable-arrow.active:active {
+                background-color: rgb(120, 120, 120);
+            }
+
+            .Scrollable-arrow.active:active::after {
+                filter: brightness(500%);
+            }
+
+            .Scrollable-arrow::after {
+                position: absolute;
+                background-image: url('data:image/svg+xml; utf8,<svg shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg" width="8px" height="8px" viewBox="0 0 8 8"><polygon fill="rgb(80,80,80)" points="4,0 0,4, 8,4"/></svg>');
+                background-size: 50%;
+                background-position: center;
+                background-repeat: no-repeat;
+                box-sizing: border-box;
+                content: '';
+                width: 100%;
+                height: 100%;
+            }
+
+            .Scrollable-arrow.down::after {
+                transform: rotate(180deg) translateY(2px);
+                transform-origin: center;
+            }
+
+            .Scrollable-track {
+                position: relative;
+                height: calc(100% - 34px);
+            }
+
+            .Scrollable-thumb {
+                position: absolute;
+                top: 0;
+                height: 30px;
+                left: 2px;
+                right: 2px;
+                box-sizing: border-box;
+                background-color: rgb(193, 193, 193);
+            }
+
+            .Scrollable-thumb:hover {
+                background-color: rgb(168, 168, 168);
+            }
+
+            .Scrollable-thumb:active {
+                background-color: rgb(120, 120, 120);
+            }
+        </style>
+    </head>
+    <body>
+        <div id="root"></div>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/preact/8.2.7/preact.dev.js"></script>
+        <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+        <script type="module">
+            import { DragGesture, ScrollbarAnimator, ScrollbarState } from './node_modules/scrollbar-framework/dist/index.js';
+
+            window.React = window.preact;
+            window.h = window.preact.h;
+            window.DragGesture = DragGesture
+            window.ScrollbarAnimator = ScrollbarAnimator;
+            window.ScrollbarState = ScrollbarState;
+        </script>
+        <script defer type="text/babel" src="Scrollbar.js"></script>
+        <script defer type="text/babel" src="VirtualList.js"></script>
+        <script defer type="text/babel" src="App.js"></script>
+    </body>
+</html>

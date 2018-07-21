@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tests - ScrollOffsetAnimationCurve</title>
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/mocha/5.2.0/mocha.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mocha/5.2.0/mocha.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chai/4.1.2/chai.js"></script>
+</head>
+<body>
+    <div id="mocha"></div>
+    <script type="module">
+        // These tests are from the Chromium repo. Used to validate that the port works correctly.
+        import { AnimationCurve, CubicBezierTimingFunction, DurationBehaviour } from '../src/ScrollOffsetAnimationCurve.js';
+
+        mocha.setup('bdd');
+        window.expect = chai.expect;
+
+        const kConstantDuration = 9.0;
+        const kDurationDivisor = 60.0;
+        const kInverseDeltaMaxDuration = 12.0;
+
+        let easeInOut = new CubicBezierTimingFunction('EASE_IN_OUT', 0.42, 0.0, 0.58, 1);
+
+        function expectVectorEq (a, b) {
+            expect(a.x).to.equal(b.x);
+            expect(a.y).to.equal(b.y);
+        }
+
+        function expectVectorNear(a, b, margin) {
+            expectNear(a.x, b.x, margin);
+            expectNear(a.y, b.y, margin);
+        }
+
+        function expectNear (a, b, margin) {
+            expect(Math.abs(a - b) <= margin).to.be.true;
+        }
+
+        describe('ScrollOffsetAnimationCurve', () => {
+            it ('should be defined', () => {
+                expect(AnimationCurve).not.to.be.undefined;
+            });
+
+            it ('DeltaBasedDuration', () => {
+                let target_value = {x: 100, y: 200};
+                let curve = new AnimationCurve(target_value, easeInOut);
+
+                curve.SetInitialValue(target_value);
+                expect(curve.Duration()).to.equal(0);
+
+                // x decreases, y stays the same.
+                curve.SetInitialValue({x: 136, y: 200});
+                expect(curve.Duration()).to.equal(0.1);
+
+                // x increases, y stays the same.
+                curve.SetInitialValue({x: 19, y: 200});
+                expect(curve.Duration()).to.equal(0.15);
+
+                // x stays the same, y decreases.
+                curve.SetInitialValue({x: 100, y: 344});
+                expect(curve.Duration()).to.equal(0.2);
+
+                // x stays the same, y increases.
+                curve.SetInitialValue({x: 100, y: 191});
+                expect(curve.Duration()).to.equal(0.05);
+
+                // x decreases, y decreases.
+                curve.SetInitialValue({x: 32500, y: 500});
+                expect(curve.Duration()).to.equal(3.0);
+
+                // x decreases, y increases.
+                curve.SetInitialValue({x: 150, y: 119});
+                expect(curve.Duration()).to.equal(0.15);
+
+                // x increases, y decreases.
+                curve.SetInitialValue({x: 0, y: 14600});
+                expect(curve.Duration()).to.equal(2.0);
+
+                // x increases, y increases.
+                curve.SetInitialValue({x: 95, y: 191});
+                expect(curve.Duration()).to.equal(0.05);
+            })
+
+            it ('GetValue', () => {
+                let initial_value = {x: 2, y: 40};
+                let target_value = {x: 10, y: 20};
+                let curve = new AnimationCurve(target_value, easeInOut);
+                curve.SetInitialValue(initial_value);
+
+                let duration = curve.Duration();
+                expect(curve.Duration() > 0).to.be.true;
+                expect(curve.Duration() < 0.1).to.be.true;
+
+                expect(duration).to.equal(curve.Duration());
+
+
+                expectVectorEq(initial_value, curve.GetValue(-1));
+                expectVectorNear({x: 6, y: 30}, curve.GetValue(duration * 0.5), 0.00025);
+                expectVectorEq(target_value, curve.GetValue(duration));
+                expectVectorEq(target_value, curve.GetValue(duration + 1.0));
+
+                // Verify that GetValue takes the timing function into account.
+                let value = curve.GetValue(duration * 0.25);
+                expect(Math.abs(3.0333 - value.x) <= 0.0002).to.be.true;
+                expect(Math.abs(37.4168 - value.y) <= 0.0002).to.be.true;
+            });
+
+            it ('UpdateTarget', () => {
+                let initial_value = {x: 0, y: 0};
+                let target_value = {x: 0, y: 3600};
+                let duration = kConstantDuration / kDurationDivisor;
+
+                let curve = new AnimationCurve(target_value, easeInOut, DurationBehaviour.CONSTANT);
+                curve.SetInitialValue(initial_value);
+
+                expectNear(duration, curve.Duration(), 0.0002);
+                expectNear(1800, curve.GetValue(duration / 2).y, 0.0002);
+                expectNear(3600, curve.GetValue(duration).y, 0.0002);
+
+                curve.UpdateTarget(duration / 2, {x: 0, y: 9900});
+
+                expectNear(duration * 1.5, curve.Duration(), 0.0002);
+                expectNear(1800, curve.GetValue(duration / 2).y, 0.0002);
+                expectNear(6827.6, curve.GetValue(duration).y, 0.1);
+                expectNear(9900, curve.GetValue(duration * 1.5).y, 0.0002);
+        
+                curve.UpdateTarget(duration, {x: 0, y: 7200});
+
+                expectNear(duration * 1.0794, curve.Duration(), 0.0002);
+                expectNear(6827.6, curve.GetValue(duration).y, 0.1);
+                expectNear(7200, curve.GetValue(duration * 1.08).y, 0.0002);
+            })
+
+            it ('InverseDeltaDuration', () => {
+                let curve = new AnimationCurve({x: 0, y: 100}, easeInOut, DurationBehaviour.INVERSE_DELTA);
+                curve.SetInitialValue({x: 0, y: 0});
+                let smallDeltaDuration = curve.Duration();
+
+                curve.UpdateTarget(0.01, {x:0, y: 300});
+                let mediumDeltaDuration = curve.Duration();
+
+                curve.UpdateTarget(0.01, {x: 0, y: 500});
+                let largeDeltaDuration = curve.Duration();
+
+                expect(smallDeltaDuration > mediumDeltaDuration).to.be.true;
+                expect(mediumDeltaDuration > largeDeltaDuration).to.be.true;
+
+                curve.UpdateTarget(0.01, {x: 0, y: 5000});
+                expect(largeDeltaDuration).to.equal(curve.Duration());
+            })
+
+            it ('CurveWithDelay', () => {
+                let curve = new AnimationCurve({x: 0, y: 100}, easeInOut, DurationBehaviour.INVERSE_DELTA);
+                let duration_in_seconds = kInverseDeltaMaxDuration / kDurationDivisor;
+                let delay_in_seconds = 0.02;
+                let curve_duration = duration_in_seconds - delay_in_seconds;
+
+                curve.SetInitialValue({x: 0, y: 0}, delay_in_seconds);
+
+                expectNear(curve_duration, curve.Duration(), 0.0002);
+
+                curve.UpdateTarget(0.01, {x: 0, y: 500});
+                expect(curve_duration > curve.Duration()).to.be.true;
+                expect({x: 0, y: 500}).to.deep.equal(curve.target_value);
+            })
+
+            it ('CurveWithLargeDelay', () => {
+                let curve = new AnimationCurve({x: 0, y: 100}, easeInOut, DurationBehaviour.INVERSE_DELTA);
+                curve.SetInitialValue({x: 0, y: 0}, 0.2);
+                expect(0).to.equal(curve.Duration());
+
+                // Re-targeting when animation duration is 0.
+                curve.UpdateTarget(-0.01, {x: 0, y: 300});
+                let duration = AnimationCurve.prototype.SegmentDuration({x: 0, y: 200}, DurationBehaviour.INVERSE_DELTA, 0.01);
+                expect(duration).to.equal(curve.Duration());
+
+
+                // Re-targeting before last_retarget_, the  difference should be accounted for
+                // in duration.
+                curve.UpdateTarget(-0.01, {x: 0, y: 500});
+
+                duration = AnimationCurve.prototype.SegmentDuration({x: 0, y: 500}, DurationBehaviour.INVERSE_DELTA, 0.01);
+                expect(duration).to.equal(curve.Duration());
+                expectVectorEq({x: 0, y: 500}, curve.GetValue(1.0));
+            })
+
+            it ('UpdateTargetZeroLastSegmentDuration', () => {
+                let curve = new AnimationCurve({x: 0, y: 100}, easeInOut, DurationBehaviour.INVERSE_DELTA);
+
+                let duration_in_seconds = kInverseDeltaMaxDuration / kDurationDivisor;
+                let delay_in_seconds = 0.02;
+                let curve_duration = duration_in_seconds - delay_in_seconds;
+
+                curve.SetInitialValue({x: 0, y: 0}, delay_in_seconds);
+                expectNear(curve_duration, curve.Duration(), 0.0002);
+
+                // Re-target 1, this should set last_retarget_ to 0.05.
+
+                let new_delta = (function () {
+                    let curr = curve.GetValue(0.05);
+                    return {
+                        x: 0 - curr.x,
+                        y: 200 - curr.y
+                    }
+                })();
+
+                let expected_duration = AnimationCurve.prototype.SegmentDuration({x: new_delta.x, y: new_delta.y}, DurationBehaviour.INVERSE_DELTA, 0) + 0.05;
+                curve.UpdateTarget(0.05, {x: 0, y: 200});
+                expectNear(expected_duration, curve.Duration(), 0.0002);
+
+                // Re-target 2, this should set total_animation_duration to t, which is
+                curve.UpdateTarget(-0.145, {x: 0, y: 300});
+                expectNear(0.05, curve.Duration(), 0.0002);
+
+                // Re-target 3, this should set total_animation_duration based on new_delta.
+
+                new_delta = (function () {
+                    let curr = curve.GetValue(0.05);
+                    return {
+                        x: 0 - curr.x,
+                        y: 500 - curr.y
+                    }
+                })();
+
+                expected_duration = AnimationCurve.prototype.SegmentDuration({x: new_delta.x, y: new_delta.y}, DurationBehaviour.INVERSE_DELTA, 0.15);
+                curve.UpdateTarget(-0.1, {x: 0, y: 500});
+                expectNear(expected_duration, curve.Duration(), 0.0002);
+            })
+        });
+
+        mocha.run();
+    </script>
+</body>
+</html>

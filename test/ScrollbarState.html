@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Scrollbar Interface</title>
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/mocha/5.2.0/mocha.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mocha/5.2.0/mocha.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chai/4.1.2/chai.js"></script>
+</head>
+<body>
+     <div id="mocha"></div>
+    <script type="module">
+        import ScrollbarState from '../src/ScrollbarState.js';
+
+        mocha.setup('bdd');
+        window.expect = chai.expect;
+
+        describe('ScrollbarState', () => {
+            it ('should be defined', () => {
+                expect(ScrollbarState).not.to.be.undefined;
+            });
+
+            describe('thumb size', () => {
+                it ('scenario 1 - default 50%', () => {
+                    let scrollbar = new ScrollbarState();
+                    scrollbar.setViewportSize(100);
+                    scrollbar.setScrollSize(200);
+                    expect(scrollbar.getThumbPosition()).to.equal(0);
+                    expect(scrollbar.getThumbSize()).to.equal(50);
+                });
+
+                it ('scenario 2 - default 75%', () => {
+                    let scrollbar = new ScrollbarState();
+                    scrollbar.setViewportSize(150);
+                    scrollbar.setScrollSize(200);
+                    expect(scrollbar.getThumbPosition()).to.equal(0);
+                    expect(scrollbar.getThumbSize()).to.equal(150 * 3 / 4);
+                });
+
+                it ('scenario 3 - move default 50% by thumb', () => {
+                    let scrollbar = new ScrollbarState();
+                    scrollbar.setViewportSize(100);
+                    scrollbar.setScrollSize(200);
+                    scrollbar.setThumbPosition(50);
+                    expect(scrollbar.getThumbPosition()).to.equal(50);
+                    expect(scrollbar.getScrollPosition()).to.equal(100);
+                });
+
+                it ('scenario 4 - move default 50% by scroll', () => {
+                    let scrollbar = new ScrollbarState();
+                    scrollbar.setViewportSize(100);
+                    scrollbar.setScrollSize(200);
+                    scrollbar.setScrollPosition(100);
+                    expect(scrollbar.getThumbPosition()).to.equal(50);
+                    expect(scrollbar.getScrollPosition()).to.equal(100);
+                });
+
+                it ('scenario 5 - default position, resize viewport', () => {
+                    let scrollbar = new ScrollbarState();
+                    scrollbar.setViewportSize(100);
+                    scrollbar.setScrollSize(200);
+                    scrollbar.setViewportSize(50);
+                    expect(scrollbar.getThumbPosition()).to.equal(0);
+                    expect(scrollbar.getThumbSize()).to.equal(50 / 200 * 50);
+                    scrollbar.setViewportSize(100);
+                    expect(scrollbar.getThumbSize()).to.equal(50);
+                })
+
+                it ('scenario 6 - default position, resize scroll size', () => {
+                    let scrollbar = new ScrollbarState();
+                    scrollbar.setViewportSize(100);
+                    scrollbar.setScrollSize(200);
+                    scrollbar.setScrollSize(400);
+                    expect(scrollbar.getThumbPosition()).to.equal(0);
+                    expect(scrollbar.getThumbSize()).to.equal(100 / 400 * 100);
+                });
+
+                it ('scenario 7 - maintain position on viewport reduce', () => {
+                    let scrollbar = new ScrollbarState();
+                    scrollbar.setViewportSize(100);
+                    scrollbar.setScrollSize(200);
+                    scrollbar.setThumbPosition(10);
+                    scrollbar.setViewportSize(50);
+                    expect(scrollbar.getThumbPosition()).to.equal(10);
+                    expect(scrollbar.getThumbSize()).to.equal(50 / 200 * 50);
+                });
+
+                it ('scenario 8 - maintain position on scroll size reduce', () => {
+                    let scrollbar = new ScrollbarState();
+                    scrollbar.setViewportSize(100);
+                    scrollbar.setScrollSize(200);
+                    scrollbar.setThumbPosition(10);
+                    scrollbar.setScrollSize(150);
+                    expect(scrollbar.getThumbPosition()).to.equal(10);
+                });
+
+                it ('scenario 9 - min height thumb, default position', () => {
+                    let scrollbar = new ScrollbarState();
+                    scrollbar.setViewportSize(100);
+                    scrollbar.setScrollSize(100000);
+                    expect(scrollbar.getThumbPosition()).to.equal(0);
+                    expect(scrollbar.getThumbSize()).to.equal(10);
+                });
+
+                it ('scenario 10 - min height thumb, move to bottom', () => {
+                    let scrollbar = new ScrollbarState();
+                    scrollbar.setViewportSize(100);
+                    scrollbar.setScrollSize(100000);
+                    expect(scrollbar.getThumbSize()).to.equal(10);
+                    scrollbar.setThumbPosition(100000);
+                    expect(scrollbar.getThumbPosition()).to.equal(100 - 10);
+                    expect(scrollbar.getScrollPosition()).to.equal(100000 - 100);
+                });
+            });
+        })
+    
+        mocha.run();
+    </script>
+</body>
+</html>
