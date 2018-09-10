@@ -9,7 +9,8 @@ let generate = file => {
             })
         ],
         output: [
-            { file: 'dist/' + file, format: 'es'}
+            { file: 'dist/es/' + file, format: 'es'},
+            { file: 'dist/cjs/' + file, format: 'cjs'}
         ]
     }
 }
